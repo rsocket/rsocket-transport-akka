@@ -2,7 +2,7 @@ package io.rsocket.transport.akka
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import akka.util.ByteString
 import io.netty.buffer.Unpooled
 import io.rsocket.frame.FrameHeaderFlyweight
@@ -11,7 +11,7 @@ import io.rsocket.{DuplexConnection, Frame}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{Flux, Mono, MonoProcessor}
 
-class WebsocketDuplexConnection(in: Publisher[Message], out: Subscriber[Message])(implicit system: ActorSystem) extends DuplexConnection {
+class WebsocketDuplexConnection(in: Publisher[Message], out: SourceQueueWithComplete[Message])(implicit system: ActorSystem) extends DuplexConnection {
   private val close = MonoProcessor.create[Void]
 
   override def receive(): Flux[Frame] = {
@@ -30,23 +30,15 @@ class WebsocketDuplexConnection(in: Publisher[Message], out: Subscriber[Message]
 
   override def sendOne(frame: Frame): Mono[Void] = {
     val buf = ByteString(frame.content().skipBytes(FRAME_LENGTH_SIZE).nioBuffer)
-    Mono.fromRunnable(() => out.onNext(BinaryMessage(buf)))
+    Mono.fromRunnable(() => out.offer(BinaryMessage(buf)))
   }
 
   override def onClose(): Mono[Void] = close
 
   override def dispose(): Unit = {
-    out.onComplete()
+    out.complete()
     close.onComplete()
   }
 
   override def isDisposed: Boolean = close.isDisposed
-}
-
-object WebsocketDuplexConnection {
-  def flow(implicit system: ActorSystem): Flow[Message, Message, WebsocketDuplexConnection] =
-    Flow.fromSinkAndSourceMat(
-      Sink.asPublisher[Message](fanout = false),
-      Source.asSubscriber[Message]
-    )(new WebsocketDuplexConnection(_, _))
 }

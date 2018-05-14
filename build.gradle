@@ -5,10 +5,10 @@ repositories {
 }
 
 dependencies {
-    compile 'io.rsocket:rsocket-core:0.10.3'
+    compile 'io.rsocket:rsocket-core:0.11.1'
     compile 'com.typesafe.akka:akka-http_2.12:10.1.1'
     compile 'com.typesafe.akka:akka-stream_2.12:2.5.11'
 
-    testCompile 'io.rsocket:rsocket-test:0.10.3'
+    testCompile 'junit:junit:4.12'
     testCompile 'com.typesafe.akka:akka-http-testkit_2.12:10.1.1'
 }

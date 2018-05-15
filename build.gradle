@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.rsocket:rsocket-core:0.11.1'
+    compile 'io.rsocket:rsocket-core:0.11.2'
     compile 'com.typesafe.akka:akka-http_2.12:10.1.1'
     compile 'com.typesafe.akka:akka-stream_2.12:2.5.11'
 

@@ -11,17 +11,18 @@ import io.rsocket.transport.ServerTransport.ConnectionAcceptor
 import io.rsocket.transport.akka.WebsocketDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class WebsocketServerTransport(interface: String, port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[ServerBindingCloseable] {
-  override def start(acceptor: ConnectionAcceptor): Mono[ServerBindingCloseable] = {
+class WebsocketServerTransport(interface: String, port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[HttpServerBindingCloseable] {
+  override def start(acceptor: ConnectionAcceptor): Mono[HttpServerBindingCloseable] = {
     val processor = UnicastProcessor.create[Message]
-    val binding = Http().bindAndHandle(handleWebSocketMessages(Flow.fromSinkAndSourceMat(
+    val handler = handleWebSocketMessages(Flow.fromSinkAndSourceMat(
       Sink.asPublisher[Message](fanout = false),
       Source.fromPublisher(processor)
     )((in, _) =>
       acceptor.apply(new WebsocketDuplexConnection(in, processor)).subscribe()
-    )), interface, port)
+    ))
+    val binding = Http().bindAndHandle(handler, interface, port)
     val publisher = Source.fromFuture(binding)
-      .map(ServerBindingCloseable)
+      .map(HttpServerBindingCloseable(_))
       .runWith(Sink.asPublisher(fanout = false))
     Mono.fromDirect(publisher)
   }

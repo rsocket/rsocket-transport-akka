@@ -13,12 +13,13 @@ import reactor.core.publisher.{Mono, UnicastProcessor}
 class WebsocketClientTransport(request: WebSocketRequest)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
   override def connect(): Mono[DuplexConnection] = {
     val processor = UnicastProcessor.create[Message]
-    val (response, connection) = Http().singleWebSocketRequest(request, Flow.fromSinkAndSourceMat(
+    val clientFlow = Flow.fromSinkAndSourceMat(
       Sink.asPublisher[Message](fanout = false),
       Source.fromPublisher(processor)
     )((in, _) =>
       new WebsocketDuplexConnection(in, processor)
-    ))
+    )
+    val (response, connection) = Http().singleWebSocketRequest(request, clientFlow)
     val publisher = Source.fromFuture(response)
       .map(_ => connection)
       .runWith(Sink.asPublisher(fanout = false))

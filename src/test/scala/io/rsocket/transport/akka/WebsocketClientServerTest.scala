@@ -9,9 +9,9 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import io.rsocket.test.{BaseClientServerTest, ClientSetupRule}
 import io.rsocket.transport.akka.client.WebsocketClientTransport
-import io.rsocket.transport.akka.server.{ServerBindingCloseable, WebsocketServerTransport}
+import io.rsocket.transport.akka.server.{HttpServerBindingCloseable, WebsocketServerTransport}
 
-class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[InetSocketAddress, ServerBindingCloseable]] {
+class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[InetSocketAddress, HttpServerBindingCloseable]] {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.log-dead-letters = off
@@ -22,7 +22,7 @@ class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[Ine
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  override def createClientServer() = new ClientSetupRule[InetSocketAddress, ServerBindingCloseable](
+  override def createClientServer() = new ClientSetupRule[InetSocketAddress, HttpServerBindingCloseable](
     () => InetSocketAddress.createUnresolved("localhost", 0),
     (address, server) => new WebsocketClientTransport(WebSocketRequest(Uri.from("ws", "", server.address.getHostName, server.address.getPort))),
     address => new WebsocketServerTransport(address.getHostName, address.getPort)

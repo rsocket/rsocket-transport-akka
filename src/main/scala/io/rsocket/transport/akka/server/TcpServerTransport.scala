@@ -22,9 +22,7 @@ class TcpServerTransport(interface: String, port: Int)(implicit system: ActorSys
     )((in, _) =>
       acceptor.apply(new TcpDuplexConnection(in, processor)).subscribe()
     )
-    val binding = Tcp().bindAndHandle(
-      handler,
-      interface, port)
+    val binding = Tcp().bindAndHandle(handler, interface, port)
     val publisher = Source.fromFuture(binding)
       .map(TcpServerBindingCloseable(_))
       .runWith(Sink.asPublisher(fanout = false))

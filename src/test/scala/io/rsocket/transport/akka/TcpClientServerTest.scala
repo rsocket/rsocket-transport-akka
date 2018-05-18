@@ -9,6 +9,8 @@ import io.rsocket.test.{BaseClientServerTest, ClientSetupRule}
 import io.rsocket.transport.akka.server.{TcpServerBindingCloseable, TcpServerTransport}
 import io.rsocket.transport.akka.client.TcpClientTransport
 
+import scala.compat.java8.FunctionConverters._
+
 class TcpClientServerTest extends BaseClientServerTest[ClientSetupRule[InetSocketAddress, TcpServerBindingCloseable]] {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
@@ -20,8 +22,8 @@ class TcpClientServerTest extends BaseClientServerTest[ClientSetupRule[InetSocke
   implicit val materializer = ActorMaterializer()
 
   override def createClientServer() = new ClientSetupRule[InetSocketAddress, TcpServerBindingCloseable](
-    () => InetSocketAddress.createUnresolved("localhost", 0),
-    (address, server) => new TcpClientTransport(server.address.getHostName, server.address.getPort),
-    address => new TcpServerTransport(address.getHostName, address.getPort)
+    asJavaSupplier(() => InetSocketAddress.createUnresolved("localhost", 0)),
+    asJavaBiFunction((address, server) => new TcpClientTransport(server.address.getHostName, server.address.getPort)),
+    asJavaFunction(address => new TcpServerTransport(address.getHostName, address.getPort))
   )
 }

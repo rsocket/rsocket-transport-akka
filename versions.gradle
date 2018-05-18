@@ -1,0 +1,29 @@
+ext.defaultScala_2_11_Version = '2.11.12'
+ext.defaultScala_2_12_Version = '2.12.5'
+
+if (!hasProperty('scalaVersion')) {
+    ext.scalaVersion = ext.defaultScala_2_12_Version
+}
+
+if (scalaVersion.startsWith('2.11')) {
+    ext.baseScalaVersion = '2.11'
+} else if (scalaVersion.startsWith('2.12')) {
+    ext.baseScalaVersion = '2.12'
+} else {
+    ext.baseScalaVersion = scalaVersion
+}
+
+ext {
+    rsocketVersion    = "0.11.2"
+    akkaHttpVersion   = "10.1.1"
+    akkaStreamVersion = "2.5.11"
+    junitVersion      = "4.12"
+}
+
+ext.libraries = [
+        rsocket             : "io.rsocket:rsocket-core:$rsocketVersion",
+        akkaHttp            : "com.typesafe.akka:akka-http_$baseScalaVersion:$akkaHttpVersion",
+        akkaStream          : "com.typesafe.akka:akka-stream_$baseScalaVersion:$akkaStreamVersion",
+        junit               : "junit:junit:$junitVersion",
+        akkaHttpTestkit     : "com.typesafe.akka:akka-http-testkit_$baseScalaVersion:$akkaHttpVersion"
+]

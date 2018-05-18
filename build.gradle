@@ -1,14 +1,149 @@
+group = 'io.netifi.rsocket'
+description = 'Akka RSocket transport implementations (TCP, Websocket)'
+
 apply plugin: 'scala'
+apply plugin: 'maven'
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compile 'io.rsocket:rsocket-core:0.11.2'
-    compile 'com.typesafe.akka:akka-http_2.12:10.1.1'
-    compile 'com.typesafe.akka:akka-stream_2.12:2.5.11'
+    zinc "com.typesafe.zinc:zinc:0.3.15"
 
-    testCompile 'junit:junit:4.12'
-    testCompile 'com.typesafe.akka:akka-http-testkit_2.12:10.1.1'
+    compile libraries.rsocket
+    compile libraries.akkaHttp
+    compile libraries.akkaStream
+
+    testCompile libraries.junit
+    testCompile libraries.akkaHttpTestkit
+}
+
+buildscript {
+    apply from: file('versions.gradle')
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'net.researchgate:gradle-release:2.7.0'
+    }
+}
+
+if (!project.parent) {
+    apply plugin: 'net.researchgate.release'
+    final svs = ['2.12.5', '2.11.12', '2.13.0-M3']
+
+    for (sv in svs) {
+        String scalaVersionInDot = sv.replaceAll("_", ".")
+
+        tasks.create(name: "build_$sv", type: GradleBuild) {
+            buildFile = './build.gradle'
+            tasks = ['build']
+            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+        }
+
+        tasks.create(name: "uploadArchives_${sv}", type: GradleBuild) {
+            buildFile = './build.gradle'
+            tasks = ['uploadArchives']
+            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+        }
+    }
+
+    tasks.create(name: "buildAll", dependsOn: svs.collect{"build_${it}"}) {}
+
+    tasks.create(name: "uploadArchivesAll", dependsOn: svs.collect{"uploadArchives_${it}"}) {}
+
+    project.task("releaseAll", description: 'Verify project, release and update version to next.', group: "Release", type: GradleBuild) {
+        startParameter = project.getGradle().startParameter.newInstance()
+        tasks = [
+                'createScmAdapter', 'checkCommitNeeded', 'checkUpdateNeeded', 'unSnapshotVersion',
+                'confirmReleaseVersion', 'checkSnapshotDependencies', 'buildAll',
+                'preTagCommit', 'createReleaseTag', 'updateVersion', 'commitNewVersion'
+        ]
+    }
+
+    project.createReleaseTag.dependsOn {
+        project.uploadArchivesAll
+    }
+}
+archivesBaseName = "${rootProject.name}_$baseScalaVersion"
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task scaladocJar(type: Jar, dependsOn: scaladoc) {
+    classifier = 'javadoc'
+    from scaladoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives scaladocJar
+}
+
+ext.bintrayUser = hasProperty("bintrayUser") ? bintrayUser : System.getenv("BINTRAY_USER")
+
+ext.bintrayKey = hasProperty("bintrayKey") ? bintrayKey : System.getenv("BINTRAY_KEY")
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://api.bintray.com/maven/netifi/netifi-oss/rsocket-transport-akka") {
+                authentication(userName: bintrayUser, password: bintrayKey)
+            }
+            pom.project {
+                name 'rsocket-transport-akka'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'Akka RSocket transport implementations (TCP, Websocket)'
+                url 'https://github.com/netifi/rsocket-transport-akka'
+
+                scm {
+                    connection 'scm:git:git@github.com:netifi/rsocket-transport-akka.git'
+                    developerConnection 'scm:git:git@github.com:netifi/rsocket-transport-akka.git'
+                    url 'https://github.com/netifi/rsocket-transport-akka'
+                }
+
+                licenses {
+                    license {
+                        name 'Apache License, Version 2.0, January 2004'
+                        url 'https://www.apache.org/licenses/LICENSE-2.0.html'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'rdegnan'
+                        name 'Ryland Degnan'
+                        email 'ryland@netifi.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
+afterReleaseBuild.dependsOn uploadArchives
+
+ScalaCompileOptions.metaClass.daemonServer = true
+ScalaCompileOptions.metaClass.fork = true
+ScalaCompileOptions.metaClass.useAnt = false
+ScalaCompileOptions.metaClass.useCompileDaemon = false
+
+project.tasks.scaladoc.scalaDocOptions.additionalParameters = ["-no-link-warnings"]
+project.tasks.compileScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
+project.tasks.compileTestScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
+
+release {
+    git {
+        requireBranch = ''
+    }
+}
+
+test {
+    maxParallelForks = 1
 }

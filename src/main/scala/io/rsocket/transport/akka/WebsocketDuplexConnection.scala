@@ -13,6 +13,7 @@ import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{Flux, Mono, MonoProcessor}
 
 import scala.concurrent.Future
+import scala.compat.java8.FunctionConverters._
 
 class WebsocketDuplexConnection(in: Publisher[Message], out: Subscriber[Message])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
   private val close = MonoProcessor.create[Void]
@@ -36,11 +37,19 @@ class WebsocketDuplexConnection(in: Publisher[Message], out: Subscriber[Message]
     Flux.from(publisher)
   }
 
-  override def send(frame: Publisher[Frame]): Mono[Void] = Flux.from(frame).concatMap(sendOne).then()
+  override def send(frame: Publisher[Frame]): Mono[Void] =
+    Flux.from(frame)
+      .concatMap(asJavaFunction(sendOne))
+      .then()
 
   override def sendOne(frame: Frame): Mono[Void] = {
-    val buf = ByteString(frame.content().skipBytes(FRAME_LENGTH_SIZE).nioBuffer)
-    Mono.fromRunnable(() => out.onNext(BinaryMessage(buf)))
+    Mono.fromRunnable(new Runnable {
+      override def run(): Unit = {
+        val buf = ByteString(frame.content().skipBytes(FRAME_LENGTH_SIZE).nioBuffer)
+        frame.release()
+        out.onNext(BinaryMessage(buf))
+      }
+    })
   }
 
   override def onClose(): Mono[Void] = close

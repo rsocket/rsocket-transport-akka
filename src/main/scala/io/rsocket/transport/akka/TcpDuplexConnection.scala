@@ -8,23 +8,31 @@ import io.rsocket.{DuplexConnection, Frame}
 import org.reactivestreams.{Publisher, Subscriber}
 import reactor.core.publisher.{Flux, Mono, MonoProcessor}
 
+import scala.compat.java8.FunctionConverters._
+
 class TcpDuplexConnection(in: Publisher[ByteString], out: Subscriber[ByteString])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
   private val close = MonoProcessor.create[Void]
 
   override def receive(): Flux[Frame] = {
     Flux.from(in)
-      .map(data => {
+      .map(asJavaFunction(data => {
         val buf = Unpooled.wrappedBuffer(data.asByteBuffer)
         Frame.from(buf.retain())
-      })
+      }))
   }
 
-  override def send(frame: Publisher[Frame]): Mono[Void] = Flux.from(frame).concatMap(sendOne).then()
+  override def send(frame: Publisher[Frame]): Mono[Void] =
+    Flux.from(frame)
+      .concatMap(asJavaFunction(sendOne))
+      .then()
 
   override def sendOne(frame: Frame): Mono[Void] = {
-    Mono.fromRunnable(() => {
-      val buf = ByteString(frame.content().nioBuffer)
-      out.onNext(buf)
+    Mono.fromRunnable(new Runnable {
+      override def run(): Unit = {
+        val buf = ByteString(frame.content().nioBuffer)
+        frame.release()
+        out.onNext(buf)
+      }
     })
   }
 

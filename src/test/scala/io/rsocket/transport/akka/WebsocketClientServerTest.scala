@@ -11,6 +11,8 @@ import io.rsocket.test.{BaseClientServerTest, ClientSetupRule}
 import io.rsocket.transport.akka.client.WebsocketClientTransport
 import io.rsocket.transport.akka.server.{HttpServerBindingCloseable, WebsocketServerTransport}
 
+import scala.compat.java8.FunctionConverters._
+
 class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[InetSocketAddress, HttpServerBindingCloseable]] {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
@@ -23,8 +25,8 @@ class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[Ine
   implicit val materializer = ActorMaterializer()
 
   override def createClientServer() = new ClientSetupRule[InetSocketAddress, HttpServerBindingCloseable](
-    () => InetSocketAddress.createUnresolved("localhost", 0),
-    (address, server) => new WebsocketClientTransport(WebSocketRequest(Uri.from("ws", "", server.address.getHostName, server.address.getPort))),
-    address => new WebsocketServerTransport(address.getHostName, address.getPort)
+    asJavaSupplier(() => InetSocketAddress.createUnresolved("localhost", 0)),
+    asJavaBiFunction((address, server) => new WebsocketClientTransport(WebSocketRequest(Uri.from("ws", "", server.address.getHostName, server.address.getPort)))),
+    asJavaFunction(address => new WebsocketServerTransport(address.getHostName, address.getPort))
   )
 }

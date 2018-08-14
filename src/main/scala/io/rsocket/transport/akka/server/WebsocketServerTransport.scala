@@ -11,7 +11,7 @@ import io.rsocket.transport.ServerTransport.ConnectionAcceptor
 import io.rsocket.transport.akka.WebsocketDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class WebsocketServerTransport(interface: String, port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[HttpServerBindingCloseable] {
+class WebsocketServerTransport(val interface: String, val port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[HttpServerBindingCloseable] {
   override def start(acceptor: ConnectionAcceptor): Mono[HttpServerBindingCloseable] = {
     val processor = UnicastProcessor.create[Message]
     val handler = handleWebSocketMessages(Flow.fromSinkAndSourceMat(

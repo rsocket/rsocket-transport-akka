@@ -10,7 +10,7 @@ import io.rsocket.transport.ClientTransport
 import io.rsocket.transport.akka.WebsocketDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class WebsocketClientTransport(request: WebSocketRequest)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
+class WebsocketClientTransport(val request: WebSocketRequest)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
   override def connect(): Mono[DuplexConnection] = {
     val processor = UnicastProcessor.create[Message]
     val clientFlow = Flow.fromSinkAndSourceMat(

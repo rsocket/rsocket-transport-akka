@@ -10,7 +10,7 @@ import reactor.core.publisher.{Flux, Mono, MonoProcessor}
 
 import scala.compat.java8.FunctionConverters._
 
-class TcpDuplexConnection(in: Publisher[ByteString], out: Subscriber[ByteString])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
+class TcpDuplexConnection(val in: Publisher[ByteString], val out: Subscriber[ByteString])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
   private val close = MonoProcessor.create[Void]
 
   override def receive(): Flux[Frame] = {

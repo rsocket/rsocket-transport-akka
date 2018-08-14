@@ -12,7 +12,7 @@ import io.rsocket.transport.ClientTransport
 import io.rsocket.transport.akka.TcpDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class TcpClientTransport(host: String, port: Int)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
+class TcpClientTransport(val host: String, val port: Int)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
   override def connect(): Mono[DuplexConnection] = {
     val processor = UnicastProcessor.create[ByteString]
     val clientFlow = Flow.fromSinkAndSourceMat(

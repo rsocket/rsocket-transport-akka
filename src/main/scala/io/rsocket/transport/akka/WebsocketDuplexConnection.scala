@@ -15,7 +15,7 @@ import reactor.core.publisher.{Flux, Mono, MonoProcessor}
 import scala.concurrent.Future
 import scala.compat.java8.FunctionConverters._
 
-class WebsocketDuplexConnection(in: Publisher[Message], out: Subscriber[Message])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
+class WebsocketDuplexConnection(val in: Publisher[Message], val out: Subscriber[Message])(implicit system: ActorSystem, m: Materializer) extends DuplexConnection {
   private val close = MonoProcessor.create[Void]
 
   override def receive(): Flux[Frame] = {

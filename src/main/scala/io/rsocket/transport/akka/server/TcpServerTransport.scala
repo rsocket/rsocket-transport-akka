@@ -12,7 +12,7 @@ import io.rsocket.transport.ServerTransport.ConnectionAcceptor
 import io.rsocket.transport.akka.TcpDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class TcpServerTransport(interface: String, port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[TcpServerBindingCloseable] {
+class TcpServerTransport(val interface: String, val port: Int)(implicit system: ActorSystem, m: Materializer) extends ServerTransport[TcpServerBindingCloseable] {
   override def start(acceptor: ConnectionAcceptor): Mono[TcpServerBindingCloseable] = {
     val processor = UnicastProcessor.create[ByteString]
     val handler = Flow.fromSinkAndSourceMat(

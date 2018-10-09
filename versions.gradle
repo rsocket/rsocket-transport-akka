@@ -14,9 +14,9 @@ if (scalaVersion.startsWith('2.11')) {
 }
 
 ext {
-    rsocketVersion    = "0.11.5"
-    akkaHttpVersion   = "10.1.3"
-    akkaStreamVersion = "2.5.14"
+    rsocketVersion    = "0.11.8"
+    akkaHttpVersion   = "10.1.5"
+    akkaStreamVersion = "2.5.12"
     junitVersion      = "4.12"
 }
 

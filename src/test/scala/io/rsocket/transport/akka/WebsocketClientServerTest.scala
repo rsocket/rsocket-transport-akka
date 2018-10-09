@@ -21,7 +21,6 @@ class WebsocketClientServerTest extends BaseClientServerTest[ClientSetupRule[Ine
     """)
 
   implicit val system = ActorSystem("ServerTest", testConf)
-  import system.dispatcher
   implicit val materializer = ActorMaterializer()
 
   override def createClientServer() = new ClientSetupRule[InetSocketAddress, HttpServerBindingCloseable](

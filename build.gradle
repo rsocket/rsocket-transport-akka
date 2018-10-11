@@ -11,12 +11,14 @@ repositories {
 dependencies {
     zinc "com.typesafe.zinc:zinc:0.3.15"
 
-    compile libraries.rsocket
-    compile libraries.akkaHttp
-    compile libraries.akkaStream
+    implementation libraries.rsocket
+    implementation libraries.akkaHttp
+    implementation libraries.akkaStream
 
-    testCompile libraries.junit
-    testCompile libraries.akkaHttpTestkit
+    testImplementation libraries.rsocketTest
+    testImplementation libraries.akkaActorTestkit
+
+    testRuntimeOnly libraries.junitJupiterEngine
 }
 
 buildscript {
@@ -29,6 +31,9 @@ buildscript {
         classpath 'net.researchgate:gradle-release:2.7.0'
     }
 }
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 if (!project.parent) {
     apply plugin: 'net.researchgate.release'
@@ -145,5 +150,7 @@ release {
 }
 
 test {
+    useJUnitPlatform()
+
     maxParallelForks = 1
 }

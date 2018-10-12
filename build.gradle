@@ -3,6 +3,7 @@ description = 'Akka RSocket transport implementations (TCP, Websocket)'
 
 apply plugin: 'scala'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 repositories {
     mavenCentral()
@@ -29,8 +30,16 @@ buildscript {
 
     dependencies {
         classpath 'net.researchgate:gradle-release:2.7.0'
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.7.3"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
     }
 }
+
+apply plugin: "com.jfrog.artifactory"
+apply plugin: "com.jfrog.bintray"
+apply from: 'artifactory.gradle'
+apply from: 'bintray.gradle'
+apply from: 'publication.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -74,65 +83,12 @@ if (!project.parent) {
 }
 archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-task scaladocJar(type: Jar, dependsOn: scaladoc) {
-    classifier = 'javadoc'
-    from scaladoc.destinationDir
-}
 
 artifacts {
     archives jar
     archives sourcesJar
     archives scaladocJar
 }
-
-ext.bintrayUser = hasProperty("bintrayUser") ? bintrayUser : System.getenv("BINTRAY_USER")
-
-ext.bintrayKey = hasProperty("bintrayKey") ? bintrayKey : System.getenv("BINTRAY_KEY")
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: "https://api.bintray.com/maven/netifi/netifi-oss/rsocket-transport-akka") {
-                authentication(userName: bintrayUser, password: bintrayKey)
-            }
-            pom.project {
-                name 'rsocket-transport-akka'
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'Akka RSocket transport implementations (TCP, Websocket)'
-                url 'https://github.com/rsocket/rsocket-transport-akka'
-
-                scm {
-                    connection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
-                    developerConnection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
-                    url 'https://github.com/rsocket/rsocket-transport-akka'
-                }
-
-                licenses {
-                    license {
-                        name 'Apache License, Version 2.0, January 2004'
-                        url 'https://www.apache.org/licenses/LICENSE-2.0.html'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id 'rdegnan'
-                        name 'Ryland Degnan'
-                        email 'ryland@netifi.com'
-                    }
-                }
-            }
-        }
-    }
-}
-
-afterReleaseBuild.dependsOn uploadArchives
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true

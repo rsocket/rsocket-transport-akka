@@ -1,4 +1,4 @@
-group = 'io.netifi.rsocket'
+group = 'io.rsocket'
 description = 'Akka RSocket transport implementations (TCP, Websocket)'
 
 apply plugin: 'scala'
@@ -105,12 +105,12 @@ uploadArchives {
                 packaging 'jar'
                 // optionally artifactId can be defined here
                 description 'Akka RSocket transport implementations (TCP, Websocket)'
-                url 'https://github.com/netifi/rsocket-transport-akka'
+                url 'https://github.com/rsocket/rsocket-transport-akka'
 
                 scm {
-                    connection 'scm:git:git@github.com:netifi/rsocket-transport-akka.git'
-                    developerConnection 'scm:git:git@github.com:netifi/rsocket-transport-akka.git'
-                    url 'https://github.com/netifi/rsocket-transport-akka'
+                    connection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
+                    developerConnection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
+                    url 'https://github.com/rsocket/rsocket-transport-akka'
                 }
 
                 licenses {

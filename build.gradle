@@ -57,16 +57,49 @@ if (!project.parent) {
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
         }
 
-        tasks.create(name: "uploadArchives_${sv}", type: GradleBuild) {
+        tasks.create(name: "artifactoryPublish_${sv}", type: GradleBuild) {
             buildFile = './build.gradle'
-            tasks = ['uploadArchives']
+            tasks = ['artifactoryPublish']
             startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+        }
+
+        tasks.create(name: "bintrayUpload_${sv}", type: GradleBuild) {
+            buildFile = './build.gradle'
+            tasks = ['bintrayUpload']
+            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
+        }
+
+
+        configure(tasks.getByName("build_${sv}")) {
+            group = 'Build'
+        }
+
+        configure(tasks.getByName("artifactoryPublish_${sv}")) {
+            group = 'Publishing'
+        }
+
+        configure(tasks.getByName("bintrayUpload_${sv}")) {
+            group = 'Publishing'
         }
     }
 
     tasks.create(name: "buildAll", dependsOn: svs.collect{"build_${it}"}) {}
 
-    tasks.create(name: "uploadArchivesAll", dependsOn: svs.collect{"uploadArchives_${it}"}) {}
+    configure(tasks.getByName("buildAll")) {
+        group = 'Build'
+    }
+
+    tasks.create(name: "artifactoryPublishAll", dependsOn: svs.collect{"artifactoryPublish_${it}"}) {}
+
+    configure(tasks.getByName("artifactoryPublishAll")) {
+        group = 'Publishing'
+    }
+
+    tasks.create(name: "bintrayUploadAll", dependsOn: svs.collect{"bintrayUpload_${it}"}) {}
+
+    configure(tasks.getByName("bintrayUploadAll")) {
+        group = 'Publishing'
+    }
 
     project.task("releaseAll", description: 'Verify project, release and update version to next.', group: "Release", type: GradleBuild) {
         startParameter = project.getGradle().startParameter.newInstance()
@@ -81,8 +114,8 @@ if (!project.parent) {
         project.uploadArchivesAll
     }
 }
-archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 
+archivesBaseName = "${rootProject.name}_$baseScalaVersion"
 
 artifacts {
     archives jar

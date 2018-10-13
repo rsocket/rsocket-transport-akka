@@ -13,6 +13,7 @@ plugins.withType(MavenPublishPlugin) {
 	publications {
 	  maven(MavenPublication) {
 		groupId project.group
+		artifactId archivesBaseName
 
 		artifact sourcesJar
 		artifact scaladocJar

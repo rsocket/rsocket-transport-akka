@@ -28,7 +28,7 @@ if (project.hasProperty('bintrayUser') && project.hasProperty('bintrayKey')
 	  publish = true
 
 	  pkg {
-		repo = 'RSocket-Transport-Akka'
+		repo = 'RSocket'
 		name = 'rsocket-transport-akka'
 		licenses = ['Apache-2.0']
 

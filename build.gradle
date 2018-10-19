@@ -1,21 +1,10 @@
-buildscript {
-    apply from: file('versions.gradle')
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'net.researchgate:gradle-release:2.7.0'
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.7.3"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
-    }
+plugins {
+    id 'scala'
+    id 'maven-publish'
+    id 'com.jfrog.artifactory' version '4.7.3'
+    id 'com.jfrog.bintray' version '1.8.4'
+    id 'com.adtran.scala-multiversion-plugin' version '1.0.32'
 }
-
-apply plugin: 'scala'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.artifactory'
-apply plugin: 'com.jfrog.bintray'
 
 group = 'io.rsocket'
 description = 'Akka RSocket transport implementations (TCP, Websocket)'
@@ -24,104 +13,95 @@ repositories {
     jcenter()
 }
 
+ext {
+    rsocketVersion    = "0.11.9"
+    akkaHttpVersion   = "10.1.3"
+    akkaStreamVersion = "2.5.17"
+    junitVersion      = "5.1.0"
+}
+
 dependencies {
     zinc "com.typesafe.zinc:zinc:0.3.15"
 
-    compile libraries.rsocket
-    compile libraries.akkaHttp
-    compile libraries.akkaStream
+    compile "org.scala-lang:scala-library:%scala-version%"
+    compile "io.rsocket:rsocket-core:$rsocketVersion"
+    compile "com.typesafe.akka:akka-http_%%:$akkaHttpVersion"
+    compile "com.typesafe.akka:akka-stream_%%:$akkaStreamVersion"
 
-    testCompile libraries.rsocketTest
-    testCompile libraries.akkaActorTestkit
+    testCompile "io.rsocket:rsocket-test:$rsocketVersion"
+    testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:$akkaStreamVersion"
 
-    testRuntimeOnly libraries.junitJupiterEngine
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
 }
-
-apply from: 'publication.gradle'
-apply from: 'artifactory.gradle'
-apply from: 'bintray.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-if (!project.parent) {
-    apply plugin: 'net.researchgate.release'
-    final svs = ['2.12.6', '2.11.12', '2.13.0-M3']
-
-    for (sv in svs) {
-        String scalaVersionInDot = sv.replaceAll("_", ".")
-
-        tasks.create(name: "build_$sv", type: GradleBuild) {
-            buildFile = './build.gradle'
-            tasks = ['build']
-            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
-        }
-
-        tasks.create(name: "artifactoryPublish_${sv}", type: GradleBuild) {
-            buildFile = './build.gradle'
-            tasks = ['artifactoryPublish']
-            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
-        }
-
-        tasks.create(name: "bintrayUpload_${sv}", type: GradleBuild) {
-            buildFile = './build.gradle'
-            tasks = ['bintrayUpload']
-            startParameter.projectProperties = [scalaVersion: "${scalaVersionInDot}"]
-        }
-
-
-        configure(tasks.getByName("build_${sv}")) {
-            group = 'Build'
-        }
-
-        configure(tasks.getByName("artifactoryPublish_${sv}")) {
-            group = 'Publishing'
-        }
-
-        configure(tasks.getByName("bintrayUpload_${sv}")) {
-            group = 'Publishing'
-        }
-    }
-
-    tasks.create(name: "buildAll", dependsOn: svs.collect{"build_${it}"}) {}
-
-    configure(tasks.getByName("buildAll")) {
-        group = 'Build'
-    }
-
-    tasks.create(name: "artifactoryPublishAll", dependsOn: svs.collect{"artifactoryPublish_${it}"}) {}
-
-    configure(tasks.getByName("artifactoryPublishAll")) {
-        group = 'Publishing'
-    }
-
-    tasks.create(name: "bintrayUploadAll", dependsOn: svs.collect{"bintrayUpload_${it}"}) {}
-
-    configure(tasks.getByName("bintrayUploadAll")) {
-        group = 'Publishing'
-    }
-
-    project.task("releaseAll", description: 'Verify project, release and update version to next.', group: "Release", type: GradleBuild) {
-        startParameter = project.getGradle().startParameter.newInstance()
-        tasks = [
-                'createScmAdapter', 'checkCommitNeeded', 'checkUpdateNeeded', 'unSnapshotVersion',
-                'confirmReleaseVersion', 'checkSnapshotDependencies', 'buildAll',
-                'preTagCommit', 'createReleaseTag', 'updateVersion', 'commitNewVersion'
-        ]
-    }
-
-    project.createReleaseTag.dependsOn {
-        project.uploadArchivesAll
-    }
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
 
-archivesBaseName = "${rootProject.name}_$baseScalaVersion"
+task scaladocJar(type: Jar, dependsOn: scaladoc) {
+    classifier = 'javadoc'
+    from scaladoc.destinationDir
+}
 
 artifacts {
     archives jar
     archives sourcesJar
     archives scaladocJar
 }
+
+plugins.withType(MavenPublishPlugin) {
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId project.group
+                artifactId archivesBaseName
+
+                from components.java
+
+                artifact sourcesJar
+                artifact scaladocJar
+
+                pom.withXml {
+                    asNode().':version' + {
+                        resolveStrategy = DELEGATE_FIRST
+
+                        name project.name
+                        description project.description
+                        url 'http://rsocket.io'
+
+                        licenses {
+                            license {
+                                name 'The Apache Software License, Version 2.0'
+                                url 'http://www.apache.org/license/LICENSE-2.0.txt'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id 'rdegnan'
+                                name 'Ryland Degnan'
+                                email 'ryland@netifi.com'
+                            }
+                        }
+
+                        scm {
+                            connection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
+                            developerConnection 'scm:git:git@github.com:rsocket/rsocket-transport-akka.git'
+                            url 'https://github.com/rsocket/rsocket-transport-akka'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+apply from: 'artifactory.gradle'
+apply from: 'bintray.gradle'
 
 ScalaCompileOptions.metaClass.daemonServer = true
 ScalaCompileOptions.metaClass.fork = true
@@ -131,12 +111,6 @@ ScalaCompileOptions.metaClass.useCompileDaemon = false
 project.tasks.scaladoc.scalaDocOptions.additionalParameters = ["-no-link-warnings"]
 project.tasks.compileScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
 project.tasks.compileTestScala.scalaCompileOptions.additionalParameters = ["-target:jvm-1.8"]
-
-release {
-    git {
-        requireBranch = ''
-    }
-}
 
 test {
     useJUnitPlatform()

@@ -11,7 +11,7 @@ elif [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_TAG" == "" ] && [ "$bin
     ./gradlew \
         -PbintrayUser="${bintrayUser}" -PbintrayKey="${bintrayKey}" \
         -PsonatypeUsername="${sonatypeUsername}" -PsonatypePassword="${sonatypePassword}" \
-        build artifactoryPublishAll --stacktrace
+        build artifactoryPublish --stacktrace
 
 elif [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_TAG" != "" ] && [ "$bintrayUser" != "" ] ; then
 
@@ -20,7 +20,7 @@ elif [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_TAG" != "" ] && [ "$bin
         -Pversion="$TRAVIS_TAG" \
         -PbintrayUser="${bintrayUser}" -PbintrayKey="${bintrayKey}" \
         -PsonatypeUsername="${sonatypeUsername}" -PsonatypePassword="${sonatypePassword}" \
-        build bintrayUploadAll --stacktrace
+        build bintrayUpload --stacktrace
 
 else
 

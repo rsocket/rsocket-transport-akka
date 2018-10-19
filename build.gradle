@@ -6,7 +6,7 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {

@@ -1,27 +1,3 @@
-group = 'io.rsocket'
-description = 'Akka RSocket transport implementations (TCP, Websocket)'
-
-apply plugin: 'scala'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-
-repositories {
-    jcenter()
-}
-
-dependencies {
-    zinc "com.typesafe.zinc:zinc:0.3.15"
-
-    implementation libraries.rsocket
-    implementation libraries.akkaHttp
-    implementation libraries.akkaStream
-
-    testImplementation libraries.rsocketTest
-    testImplementation libraries.akkaActorTestkit
-
-    testRuntimeOnly libraries.junitJupiterEngine
-}
-
 buildscript {
     apply from: file('versions.gradle')
     repositories {
@@ -35,11 +11,35 @@ buildscript {
     }
 }
 
-apply plugin: "com.jfrog.artifactory"
-apply plugin: "com.jfrog.bintray"
+apply plugin: 'scala'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'com.jfrog.bintray'
+
+group = 'io.rsocket'
+description = 'Akka RSocket transport implementations (TCP, Websocket)'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    zinc "com.typesafe.zinc:zinc:0.3.15"
+
+    compile libraries.rsocket
+    compile libraries.akkaHttp
+    compile libraries.akkaStream
+
+    testCompile libraries.rsocketTest
+    testCompile libraries.akkaActorTestkit
+
+    testRuntimeOnly libraries.junitJupiterEngine
+}
+
+apply from: 'publication.gradle'
 apply from: 'artifactory.gradle'
 apply from: 'bintray.gradle'
-apply from: 'publication.gradle'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

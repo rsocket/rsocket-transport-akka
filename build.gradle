@@ -14,8 +14,8 @@ repositories {
 }
 
 ext {
-    rsocketVersion    = "0.11.9"
-    akkaHttpVersion   = "10.1.3"
+    rsocketVersion    = "0.11.11"
+    akkaHttpVersion   = "10.1.5"
     akkaStreamVersion = "2.5.17"
     junitVersion      = "5.1.0"
 }
@@ -31,6 +31,8 @@ dependencies {
     testCompile "io.rsocket:rsocket-test:$rsocketVersion"
     testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:$akkaStreamVersion"
 
+    testRuntimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+    testRuntimeOnly "com.typesafe.akka:akka-slf4j_%%:$akkaStreamVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
 }
 

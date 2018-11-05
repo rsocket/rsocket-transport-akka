@@ -10,19 +10,16 @@ import io.rsocket.transport.ClientTransport
 import io.rsocket.transport.akka.WebsocketDuplexConnection
 import reactor.core.publisher.{Mono, UnicastProcessor}
 
-class WebsocketClientTransport(val request: WebSocketRequest)(implicit system: ActorSystem, m: Materializer) extends ClientTransport {
+import scala.compat.java8.FutureConverters._
+
+class WebsocketClientTransport(val request: WebSocketRequest)(implicit system: ActorSystem, m: Materializer)
+  extends ClientTransport {
   override def connect(): Mono[DuplexConnection] = {
     val processor = UnicastProcessor.create[Message]
-    val clientFlow = Flow.fromSinkAndSourceMat(
-      Sink.asPublisher[Message](fanout = false),
-      Source.fromPublisher(processor)
-    )((in, _) =>
-      new WebsocketDuplexConnection(in, processor)
-    )
-    val (response, connection) = Http().singleWebSocketRequest(request, clientFlow)
-    val publisher = Source.fromFuture(response)
-      .map(_ => connection)
-      .runWith(Sink.asPublisher(fanout = false))
-    Mono.fromDirect(publisher)
+    val (response, connection) = Http().singleWebSocketRequest(request,
+      Flow.fromSinkAndSourceMat(Sink.asPublisher[Message](fanout = false), Source.fromPublisher(processor))
+      ((in, _) => new WebsocketDuplexConnection(in, processor)))
+
+    Mono.fromCompletionStage(response.toJava).thenReturn(connection)
   }
 }

@@ -11,7 +11,8 @@ import reactor.core.publisher.Mono
 
 import scala.concurrent.duration._
 
-final case class HttpServerBindingCloseable(binding: Http.ServerBinding)(implicit system: ActorSystem, m: Materializer) extends Closeable {
+final case class HttpServerBindingCloseable(binding: Http.ServerBinding)(implicit system: ActorSystem, m: Materializer)
+  extends Closeable {
 
   override def onClose(): Mono[Void] = {
     val publisher = Source.fromFuture(binding.whenTerminated).runWith(Sink.asPublisher(fanout = false))

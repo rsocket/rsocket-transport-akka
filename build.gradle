@@ -29,6 +29,7 @@ dependencies {
     compile "com.typesafe.akka:akka-stream_%%:$akkaStreamVersion"
 
     testCompile "io.rsocket:rsocket-test:$rsocketVersion"
+    testCompile "io.rsocket:rsocket-transport-netty:$rsocketVersion"
     testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:$akkaStreamVersion"
 
     testRuntimeOnly 'ch.qos.logback:logback-classic:1.2.3'

@@ -14,9 +14,9 @@ repositories {
 }
 
 ext {
-    rsocketVersion    = "0.11.12"
-    akkaHttpVersion   = "10.1.5"
-    akkaStreamVersion = "2.5.17"
+    rsocketVersion    = "0.11.18"
+    akkaHttpVersion   = "10.1.7"
+    akkaStreamVersion = "2.5.21"
     junitVersion      = "5.1.0"
 }
 

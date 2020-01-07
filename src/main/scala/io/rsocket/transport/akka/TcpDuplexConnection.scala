@@ -3,46 +3,59 @@ package io.rsocket.transport.akka
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.util.ByteString
-import io.netty.buffer.Unpooled
-import io.rsocket.{DuplexConnection, Frame}
+import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+import io.rsocket.frame.FrameLengthFlyweight
+import io.rsocket.internal.BaseDuplexConnection
 import org.reactivestreams.{Publisher, Subscriber}
-import reactor.core.publisher.{Flux, Mono, MonoProcessor}
+import reactor.core.publisher.{Flux, Mono}
 
 import scala.compat.java8.FunctionConverters._
 
-class TcpDuplexConnection(val in: Publisher[ByteString], val out: Subscriber[ByteString])(implicit system: ActorSystem, m: Materializer)
-  extends DuplexConnection {
-  private val close = MonoProcessor.create[Void]
+class TcpDuplexConnection(val in: Publisher[ByteString],
+                          val out: Subscriber[ByteString],
+                          val encodeLength: Boolean = true,
+                          val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT)(implicit system: ActorSystem, m: Materializer)
+  extends BaseDuplexConnection {
 
-  override def receive(): Flux[Frame] = {
-    Flux.from(in)
-      .map(asJavaFunction(data => {
-        val buf = Unpooled.wrappedBuffer(data.asByteBuffer)
-        Frame.from(buf.retain())
-      }))
+  override def doOnClose(): Unit = {
+    out.onComplete()
   }
 
-  override def send(frame: Publisher[Frame]): Mono[Void] =
+  override def receive(): Flux[ByteBuf] = {
+    Flux.from(in).map(asJavaFunction(decode))
+  }
+
+  override def send(frame: Publisher[ByteBuf]): Mono[Void] = {
     Flux.from(frame)
       .concatMap(asJavaFunction(sendOne))
       .then()
+  }
 
-  override def sendOne(frame: Frame): Mono[Void] = {
+  override def sendOne(frame: ByteBuf): Mono[Void] = {
     Mono.fromRunnable(new Runnable {
       override def run(): Unit = {
-        val buf = ByteString(frame.content().nioBuffer)
-        frame.release()
+        val encoded = encode(frame)
+        val buf = ByteString(encoded.nioBuffer())
+        encoded.release()
         out.onNext(buf)
       }
     })
   }
 
-  override def onClose(): Mono[Void] = close
-
-  override def dispose(): Unit = {
-    out.onComplete()
-    close.onComplete()
+  private def encode(frame: ByteBuf): ByteBuf = {
+    if (encodeLength) {
+      FrameLengthFlyweight.encode(allocator, frame.readableBytes(), frame)
+    } else {
+      frame
+    }
   }
 
-  override def isDisposed: Boolean = close.isDisposed
+  private def decode(data: ByteString): ByteBuf = {
+    val frame = Unpooled.wrappedBuffer(data.asByteBuffer)
+    if (encodeLength) {
+      FrameLengthFlyweight.frame(frame).retain()
+    } else {
+      frame
+    }
+  }
 }

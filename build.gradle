@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
     id 'com.jfrog.artifactory' version '4.7.3'
     id 'com.jfrog.bintray' version '1.8.4'
-    id 'com.adtran.scala-multiversion-plugin' version '1.0.32'
+    id 'com.adtran.scala-multiversion-plugin' version '1.0.35'
 }
 
 group = 'io.rsocket'
@@ -14,10 +14,14 @@ repositories {
 }
 
 ext {
-    rsocketVersion    = "0.11.18"
-    akkaHttpVersion   = "10.1.7"
-    akkaStreamVersion = "2.5.21"
+    rsocketVersion    = "1.0.0-RC5"
+    akkaHttpVersion   = "10.1.8"
+    akkaStreamVersion = "2.5.23"
     junitVersion      = "5.1.0"
+}
+
+configurations {
+    scalaAnt
 }
 
 dependencies {
@@ -30,11 +34,22 @@ dependencies {
 
     testCompile "io.rsocket:rsocket-test:$rsocketVersion"
     testCompile "io.rsocket:rsocket-transport-netty:$rsocketVersion"
-    testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:$akkaStreamVersion"
+
+    if (scalaVersion.startsWith("2.11")) {
+        testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:2.5.21"
+    } else {
+        testCompile "com.typesafe.akka:akka-actor-testkit-typed_%%:$akkaStreamVersion"
+    }
 
     testRuntimeOnly 'ch.qos.logback:logback-classic:1.2.3'
     testRuntimeOnly "com.typesafe.akka:akka-slf4j_%%:$akkaStreamVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+
+    scalaAnt 'com.sandinh:scala-ant_2.13:2.13.1'
+}
+
+scaladoc {
+    scalaClasspath += scalaVersion.startsWith("2.13") ? configurations.scalaAnt : layout.files()
 }
 
 sourceCompatibility = 1.8

@@ -19,20 +19,32 @@ package io.rsocket.transport.akka;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
-import io.rsocket.Frame;
 import io.rsocket.RSocketFactory;
+import io.rsocket.frame.decoder.PayloadDecoder;
+import io.rsocket.test.PingHandler;
 import io.rsocket.transport.akka.server.TcpServerTransport;
 
 public final class TcpPongServer {
+  private static final boolean isResume =
+      Boolean.valueOf(System.getProperty("RSOCKET_TEST_RESUME", "false"));
+  private static final int port = Integer.valueOf(System.getProperty("RSOCKET_TEST_PORT", "7878"));
+
+  private static final ActorSystem system = ActorSystem.create();
+  private static final Materializer materializer = ActorMaterializer.create(system);
 
   public static void main(String... args) {
-    final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    System.out.println("Starting TCP ping-pong server");
+    System.out.println("port: " + port);
+    System.out.println("resume enabled: " + isResume);
 
-    RSocketFactory.receive()
-        .frameDecoder(Frame::retain)
+    RSocketFactory.ServerRSocketFactory serverRSocketFactory = RSocketFactory.receive();
+    if (isResume) {
+      serverRSocketFactory.resume();
+    }
+    serverRSocketFactory
+        .frameDecoder(PayloadDecoder.ZERO_COPY)
         .acceptor(new PingHandler())
-        .transport(new TcpServerTransport("0.0.0.0", 7878, system, materializer))
+        .transport(new TcpServerTransport("0.0.0.0", port, system, materializer))
         .start()
         .block()
         .onClose()
